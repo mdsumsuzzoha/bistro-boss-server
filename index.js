@@ -10,7 +10,6 @@ app.use(express.json());
 
 // console.log(process.env.DB_USER)
 // console.log(process.env.DB_PASS)
-const uri = `mongodb+srv://bistroBossServer:AVIVkh4W1RAXryyo@cluster0.clr1a4n.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
