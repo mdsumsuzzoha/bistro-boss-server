@@ -3,14 +3,15 @@ const app = express();
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
 const port = process.env.PORT || 5000;
+require('dotenv').config();
+
 
 //middleware
 app.use(cors());
 app.use(express.json());
 
-// console.log(process.env.DB_USER)
-// console.log(process.env.DB_PASS)
-const uri = `mongodb+srv://bistroBossServer:AVIVkh4W1RAXryyo@cluster0.clr1a4n.mongodb.net/?retryWrites=true&w=majority`;
+
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.clr1a4n.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -28,6 +29,7 @@ async function run() {
 
         const menuCollection = client.db("bistroDB").collection("menu");
         const reviewCollection = client.db("bistroDB").collection("reviews");
+        const cartCollection = client.db("bistroDB").collection("carts");
 
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
@@ -35,6 +37,20 @@ async function run() {
         })
         app.get('/review', async (req, res) => {
             const result = await reviewCollection.find().toArray();
+            res.send(result);
+        })
+
+        // carts collection
+        app.get('/carts', async (req, res) => {
+            const email =  req.query.email;
+            const query = {email: email}
+            const result = await cartCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        app.post('/carts', async (req, res) => {
+            const cartItem = req.body;
+            const result = await cartCollection.insertOne(cartItem);
             res.send(result);
         })
 
