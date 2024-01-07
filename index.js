@@ -31,20 +31,42 @@ async function run() {
         const menuCollection = client.db("bistroDB").collection("menu");
         const reviewCollection = client.db("bistroDB").collection("reviews");
         const cartCollection = client.db("bistroDB").collection("carts");
+        const userCollection = client.db("bistroDB").collection("users");
 
+
+        // users related api
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            // insert if email if dosenot exist
+            const query = {email: user.email}
+            const existingUser = await userCollection.findOne(query);
+            if(existingUser){
+                return res.send({message: 'user is already exist', insertedId: null})
+            }
+            const result = await userCollection.insertOne(user);
+            res.send(result);
+        })
+
+        // ========================
+
+        // menu related api
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
             res.send(result);
         })
+        // ==========================
+
+        // menu review api
         app.get('/review', async (req, res) => {
             const result = await reviewCollection.find().toArray();
             res.send(result);
         })
+        // ================================
 
         // carts collection
         app.get('/carts', async (req, res) => {
-            const email =  req.query.email;
-            const query = {email: email}
+            const email = req.query.email;
+            const query = { email: email }
             const result = await cartCollection.find(query).toArray();
             res.send(result);
         })
@@ -55,12 +77,13 @@ async function run() {
             res.send(result);
         })
 
-        app.delete('/carts/:id', async (req,res)=>{
-            const id= req.params.id;
-            const query = {_id: new ObjectId(id)}
-            const result =  await cartCollection.deleteOne(query);
+        app.delete('/carts/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await cartCollection.deleteOne(query);
             res.send(result);
         })
+        // ============================
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
