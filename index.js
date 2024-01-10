@@ -47,7 +47,7 @@ async function run() {
 
         // varify token with middleware
         const verifyToken = (req, res, next) => {
-            console.log(req.headers.authorization);
+            // console.log(req.headers.authorization);
             if (!req.headers.authorization) {
                 return res.status(401).send({ message: 'Unauthorized Access' });
             }
@@ -62,12 +62,15 @@ async function run() {
         }
 
         // varify admin token with middleware
-        const verifyAdmin = async (req, res) => {
+        const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
+            // console.log(email);
             const query = { email: email };
+            // console.log(query);
             const user = await userCollection.findOne(query);
+            // console.log(user);
             const isAdmin = user?.role === 'admin';
-            if (isAdmin) {
+            if (!isAdmin) {
                 return res.status(403).send({ message: 'Forbidden Access' });
             }
             next();
@@ -87,24 +90,31 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/users',verifyToken, verifyAdmin, async (req, res) => {
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result);
         })
 
-        app.get('/users/admin/:email', verifyToken, async (req, res) => {
+        app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
             const email = req.params.email;
+            // console.log("Requested Email:", email);
+
             if (email !== req.decoded.email) {
-                return res.status(403).send({ message: "UnAuthorized Access" })
+                // console.log("UnAuthorized Access - Email Mismatch");
+                return res.status(403).send({ message: "UnAuthorized Access" });
             }
-            const query = { email: email }
+            const query = { email: email };
             const user = await userCollection.findOne(query);
+            // console.log("User:", user);
+
             let admin = false;
             if (user) {
                 admin = user?.role === 'admin';
             }
+            // console.log("Is Admin:", admin);
             res.send({ admin });
-        })
+        });
+
         app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
@@ -119,7 +129,7 @@ async function run() {
 
 
         })
-        app.delete('/users/:id',verifyToken, verifyAdmin, async (req, res) => {
+        app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await userCollection.deleteOne(query);
@@ -128,11 +138,45 @@ async function run() {
         // ========================
 
         // menu related api
+        app.post('/menu', verifyToken, verifyAdmin, async (req, res) => {
+            const menuItem = req.body;
+            const result = await menuCollection.insertOne(menuItem);
+            res.send(result);
+        })
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
             res.send(result);
         })
-        // ==========================
+        app.get('/menu/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await menuCollection.findOne(query);
+            res.send(result);
+        })
+        app.patch('/menu/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const itemInfo = req.body;
+            const query = { _id: new ObjectId(id) };
+            // const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    name: itemInfo.name,
+                    category: itemInfo.category,
+                    price: itemInfo.price,
+                    recipe: itemInfo.recipe,
+                },
+            };
+            const result = await menuCollection.updateOne(query, updateDoc);
+            res.send(result);
+
+
+        })
+        app.delete('/menu/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await menuCollection.deleteOne(query);
+            res.send(result);
+        })
 
         // menu review api
         app.get('/review', async (req, res) => {
